@@ -3,30 +3,160 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>我的清單網站</title>
+  <title>&#30475;&#29699;&#36275;&#36321;</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="app">
-    <h1>我的清單網站</h1>
-    <p class="subtitle">可以新增文字和圖片，也能調整清單順序。</p>
-
-    <section class="form-card">
-      <label for="itemText">清單內容</label>
-      <input id="itemText" type="text" placeholder="輸入你想新增的內容" />
-
-      <label for="itemImage">選擇圖片</label>
-      <input id="itemImage" type="file" accept="image/*" />
-
-      <button id="addBtn">新增清單</button>
+  <main class="page-shell">
+    <section class="auth-bar">
+      <div class="auth-copy">
+        <strong>&#38642;&#31471;&#21516;&#27493;&#27169;&#24335;</strong>
+        <span id="authStatusText">&#35531;&#20808;&#29992; Google &#30331;&#20837;&#65292;&#25165;&#33021;&#23384;&#21462;&#20491;&#20154;&#30475;&#29699;&#35352;&#37636;&#12290;</span>
+      </div>
+      <div class="auth-actions">
+        <button type="button" id="signInBtn" class="primary-btn">&#29992; Google &#30331;&#20837;</button>
+        <button type="button" id="signOutBtn" class="secondary-btn hidden">&#30331;&#20986;</button>
+      </div>
     </section>
 
-    <section>
-      <h2>我的清單</h2>
-      <ul id="list" class="list"></ul>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Baseball Memory Board</p>
+        <h1>&#30475;&#29699;&#36275;&#36321;</h1>
+        <p class="hero-text">
+          &#35352;&#37636;&#27599;&#19968;&#22580;&#20320;&#35242;&#33258;&#21040;&#22580;&#30340;&#27604;&#36093;&#65292;&#30041;&#19979;&#27161;&#38988;&#12289;&#26085;&#26399;&#12289;&#29699;&#22580;&#12289;&#29031;&#29255;&#33287;&#20633;&#35387;&#65292;&#29992;&#22320;&#22294;&#12289;&#26085;&#26310;&#25110;&#21015;&#34920;&#26041;&#24335;&#38263;&#26399;&#22238;&#39015;&#12290;
+        </p>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat-card">
+          <span class="stat-label">&#24050;&#35352;&#37636;&#22580;&#27425;</span>
+          <strong id="recordCount">0</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">&#19981;&#21516;&#29699;&#22580;</span>
+          <strong id="stadiumCount">0</strong>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">&#30446;&#21069;&#35222;&#22294;</span>
+          <strong id="currentViewLabel">&#22320;&#22294;</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout-grid">
+      <section class="panel form-panel">
+        <div class="panel-heading">
+          <h2>&#26032;&#22686;&#30475;&#29699;&#35352;&#37636;</h2>
+          <p>&#25226;&#27599;&#19968;&#22580;&#27604;&#36093;&#30340;&#36039;&#35338;&#23436;&#25972;&#30041;&#19979;&#20358;&#12290;</p>
+        </div>
+
+        <form id="recordForm" class="record-form">
+          <label for="title">&#27161;&#38988;</label>
+          <input id="title" name="title" type="text" placeholder="&#20363;&#22914;&#65306;&#32113;&#19968;&#29509; vs &#20013;&#20449;&#20804;&#24351;" required />
+
+          <div class="field-row">
+            <div>
+              <label for="date">&#26085;&#26399;</label>
+              <input id="date" name="date" type="date" required />
+            </div>
+            <div>
+              <label for="stadium">&#29699;&#22580;</label>
+              <input id="stadium" name="stadium" type="text" placeholder="&#20363;&#22914;&#65306;&#33274;&#21335;&#26834;&#29699;&#22580;" required />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div>
+              <label for="location">&#22478;&#24066; / &#22320;&#21312;</label>
+              <input id="location" name="location" type="text" placeholder="&#20363;&#22914;&#65306;&#21488;&#21335;&#24066;" required />
+            </div>
+            <div>
+              <label for="mapQuery">&#22320;&#22294;&#38364;&#37749;&#23383;</label>
+              <input id="mapQuery" name="mapQuery" type="text" placeholder="&#20363;&#22914;&#65306;&#33274;&#21335;&#26834;&#29699;&#22580;&#21488;&#21335;&#24066;" />
+            </div>
+          </div>
+
+          <label for="imageUrl">&#29031;&#29255;&#32178;&#22336;</label>
+          <input id="imageUrl" name="imageUrl" type="url" placeholder="https://..." />
+
+          <label for="note">&#20633;&#35387;</label>
+          <textarea id="note" name="note" rows="5" placeholder="&#20363;&#22914;&#65306;&#20170;&#22825;&#26159;&#26412;&#23395;&#31532;&#19968;&#27425;&#36914;&#22580;&#65292;&#20061;&#23616;&#19979;&#36870;&#36681;&#24456;&#31934;&#24425;&#12290;"></textarea>
+
+          <div class="form-actions">
+            <button type="submit" class="primary-btn">&#26032;&#22686;&#35352;&#37636;</button>
+            <button type="button" id="exportBtn" class="secondary-btn">&#21295;&#20986; PDF</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel content-panel">
+        <div class="panel-heading panel-heading-split">
+          <div>
+            <h2>&#25105;&#30340;&#30475;&#29699;&#36039;&#26009;&#24235;</h2>
+            <p>&#21487;&#20999;&#25563;&#22320;&#22294;&#12289;&#26085;&#26310;&#33287;&#21015;&#34920;&#35222;&#22294;&#12290;</p>
+          </div>
+
+          <div class="view-switch">
+            <button type="button" class="toggle-btn active" data-view="map">&#22320;&#22294;</button>
+            <button type="button" class="toggle-btn" data-view="calendar">&#26085;&#26310;</button>
+            <button type="button" class="toggle-btn" data-view="list">&#21015;&#34920;</button>
+          </div>
+        </div>
+
+        <div class="selection-toolbar">
+          <div class="selection-summary">
+            <strong id="selectedCount">0</strong>
+            <span>&#24050;&#36984;&#21462;&#22580;&#27425;</span>
+          </div>
+          <div class="selection-actions">
+            <button type="button" id="selectAllBtn" class="secondary-btn">&#20840;&#36984;</button>
+            <button type="button" id="clearSelectionBtn" class="secondary-btn">&#28165;&#38500;&#36984;&#21462;</button>
+          </div>
+        </div>
+
+        <div id="mapView" class="view-panel"></div>
+        <div id="calendarView" class="view-panel hidden"></div>
+        <div id="listView" class="view-panel hidden"></div>
+
+        <div class="list-heading">
+          <h3>&#38263;&#26399;&#20445;&#23384;&#25552;&#37266;</h3>
+          <span>&#36039;&#26009;&#26371;&#20445;&#23384;&#22312;&#36889;&#20491;&#28687;&#35261;&#22120;&#65292;&#20294;&#35201;&#35352;&#24471;&#23450;&#26399;&#21295;&#20986; PDF &#25110;&#20633;&#20221;&#12290;</span>
+        </div>
+      </section>
     </section>
   </main>
 
-  <script src="script.js"></script>
+  <template id="recordCardTemplate">
+    <article class="record-card">
+      <div class="record-select">
+        <label class="record-checkbox">
+          <input type="checkbox" class="record-select-input" />
+          <span>&#21295;&#20986;</span>
+        </label>
+      </div>
+      <div class="record-image-wrap">
+        <img class="record-image" alt="&#27604;&#36093;&#29031;&#29255;" />
+        <div class="record-image-fallback">No Photo</div>
+      </div>
+      <div class="record-body">
+        <div class="record-topline">
+          <span class="record-date"></span>
+          <span class="record-location"></span>
+        </div>
+        <h4 class="record-title"></h4>
+        <p class="record-stadium"></p>
+        <a class="record-map-link" target="_blank" rel="noreferrer">&#38283;&#21855;&#30495;&#23526;&#22320;&#22294;</a>
+        <p class="record-note"></p>
+        <div class="record-actions">
+          <button type="button" class="move-btn" data-action="up">&#19978;&#31227;</button>
+          <button type="button" class="move-btn" data-action="down">&#19979;&#31227;</button>
+          <button type="button" class="delete-btn" data-action="delete">&#21034;&#38500;</button>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <script type="module" src="script.js"></script>
 </body>
 </html>
