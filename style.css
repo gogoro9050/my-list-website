@@ -59,13 +59,13 @@ button {
 }
 
 #addBtn {
-  background: #ff6b00;
+  background: #2e7d32;
   color: white;
   font-weight: bold;
 }
 
 #addBtn:hover {
-  background: #e85f00;
+  background: #1b5e20;
 }
 
 .list {
@@ -102,10 +102,10 @@ button {
 }
 
 .move-btn {
-  background: #ffd166;
+  background: #c8e6c9;
 }
 
 .delete-btn {
-  background: #ef476f;
+  background: #d32f2f;
   color: white;
 }
