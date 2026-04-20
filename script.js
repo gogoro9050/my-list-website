@@ -51,6 +51,10 @@ const modeValue = document.getElementById("modeValue");
 
 const recordForm = document.getElementById("recordForm");
 const recordPhotoInput = document.getElementById("recordPhoto");
+const recordFormTitle = document.getElementById("recordFormTitle");
+const editingRecordId = document.getElementById("editingRecordId");
+const recordSubmitBtn = document.getElementById("recordSubmitBtn");
+const cancelRecordEditBtn = document.getElementById("cancelRecordEditBtn");
 const exportRecordsBtn = document.getElementById("exportRecordsBtn");
 const selectAllBtn = document.getElementById("selectAllBtn");
 const clearSelectionBtn = document.getElementById("clearSelectionBtn");
@@ -76,6 +80,7 @@ const checklistTemplate = document.getElementById("checklistCardTemplate");
 let currentUser = null;
 let activeFeature = "records";
 let currentRecordView = "map";
+let currentCalendarMonth = "";
 let recordSelections = new Set();
 let records = [];
 let checklistItems = [];
@@ -106,6 +111,7 @@ function resetSignedOutState() {
   records = [];
   checklistItems = [];
   recordSelections.clear();
+  resetRecordEditing();
   resetChecklistEditing();
   renderAll();
 }
@@ -145,6 +151,7 @@ async function loadAllData(userId) {
   }));
 
   recordSelections = new Set([...recordSelections].filter((id) => records.some((record) => record.id === id)));
+  syncCalendarMonth();
   renderAll();
 }
 
@@ -170,6 +177,42 @@ function formatMonthLabel(dateString) {
     year: "numeric",
     month: "long"
   }).format(date);
+}
+
+function getAvailableRecordMonths() {
+  return [...new Set(records.map((record) => record.date.slice(0, 7)))]
+    .filter(Boolean)
+    .sort();
+}
+
+function syncCalendarMonth() {
+  const months = getAvailableRecordMonths();
+
+  if (!months.length) {
+    currentCalendarMonth = "";
+    return;
+  }
+
+  if (!currentCalendarMonth || !months.includes(currentCalendarMonth)) {
+    currentCalendarMonth = months[months.length - 1];
+  }
+}
+
+function changeCalendarMonth(direction) {
+  const months = getAvailableRecordMonths();
+  if (!months.length) {
+    return;
+  }
+
+  const currentIndex = months.indexOf(currentCalendarMonth);
+  const nextIndex = currentIndex + direction;
+
+  if (nextIndex < 0 || nextIndex >= months.length) {
+    return;
+  }
+
+  currentCalendarMonth = months[nextIndex];
+  renderCalendarView();
 }
 
 function getMapQuery(record) {
@@ -287,83 +330,102 @@ function renderCalendarView() {
     return;
   }
 
-  const sorted = [...records].sort((a, b) => new Date(a.date) - new Date(b.date));
-  const monthGroups = sorted.reduce((accumulator, record) => {
-    const monthKey = record.date.slice(0, 7);
-    if (!accumulator[monthKey]) {
-      accumulator[monthKey] = [];
+  syncCalendarMonth();
+
+  const availableMonths = getAvailableRecordMonths();
+  const currentMonthIndex = availableMonths.indexOf(currentCalendarMonth);
+  const monthRecords = records.filter((record) => record.date.slice(0, 7) === currentCalendarMonth);
+  const [yearString, monthString] = currentCalendarMonth.split("-");
+  const year = Number(yearString);
+  const month = Number(monthString) - 1;
+  const monthStart = new Date(year, month, 1);
+  const monthEnd = new Date(year, month + 1, 0);
+  const startDay = monthStart.getDay();
+  const totalDays = monthEnd.getDate();
+
+  const recordsByDate = monthRecords.reduce((accumulator, record) => {
+    if (!accumulator[record.date]) {
+      accumulator[record.date] = [];
     }
-    accumulator[monthKey].push(record);
+    accumulator[record.date].push(record);
     return accumulator;
   }, {});
 
-  Object.entries(monthGroups).forEach(([monthKey, monthRecords]) => {
-    const [yearString, monthString] = monthKey.split("-");
-    const year = Number(yearString);
-    const month = Number(monthString) - 1;
-    const monthStart = new Date(year, month, 1);
-    const monthEnd = new Date(year, month + 1, 0);
-    const startDay = monthStart.getDay();
-    const totalDays = monthEnd.getDate();
+  const shell = document.createElement("div");
+  shell.className = "calendar-shell";
 
-    const recordsByDate = monthRecords.reduce((accumulator, record) => {
-      if (!accumulator[record.date]) {
-        accumulator[record.date] = [];
-      }
-      accumulator[record.date].push(record);
-      return accumulator;
-    }, {});
+  const header = document.createElement("div");
+  header.className = "calendar-header";
 
-    const shell = document.createElement("div");
-    shell.className = "calendar-shell";
+  const title = document.createElement("div");
+  title.className = "calendar-month-title";
+  title.textContent = formatMonthLabel(`${currentCalendarMonth}-01`);
 
-    const header = document.createElement("div");
-    header.className = "calendar-header";
-    header.innerHTML = `
-      <span>${formatMonthLabel(`${monthKey}-01`)}</span>
-      <span>${zh("\u6709\u8a18\u9304\u7684\u65e5\u5b50\u6703\u767c\u4eae")}</span>
-    `;
+  const nav = document.createElement("div");
+  nav.className = "calendar-nav";
 
-    const weekdayRow = document.createElement("div");
-    weekdayRow.className = "calendar-grid";
-    [zh("\u65e5"), zh("\u4e00"), zh("\u4e8c"), zh("\u4e09"), zh("\u56db"), zh("\u4e94"), zh("\u516d")].forEach((weekday) => {
-      const cell = document.createElement("div");
-      cell.className = "calendar-day";
-      cell.innerHTML = `<strong>${weekday}</strong>`;
-      weekdayRow.appendChild(cell);
-    });
+  const prevButton = document.createElement("button");
+  prevButton.type = "button";
+  prevButton.className = "calendar-nav-btn";
+  prevButton.textContent = "←";
+  prevButton.disabled = currentMonthIndex <= 0;
+  prevButton.addEventListener("click", () => changeCalendarMonth(-1));
 
-    const grid = document.createElement("div");
-    grid.className = "calendar-grid";
+  const hint = document.createElement("span");
+  hint.textContent = zh("\u6709\u8a18\u9304\u7684\u65e5\u5b50\u6703\u767c\u4eae");
 
-    for (let fillerIndex = 0; fillerIndex < startDay; fillerIndex += 1) {
-      const filler = document.createElement("div");
-      filler.className = "calendar-day empty";
-      grid.appendChild(filler);
-    }
+  const nextButton = document.createElement("button");
+  nextButton.type = "button";
+  nextButton.className = "calendar-nav-btn";
+  nextButton.textContent = "→";
+  nextButton.disabled = currentMonthIndex >= availableMonths.length - 1;
+  nextButton.addEventListener("click", () => changeCalendarMonth(1));
 
-    for (let day = 1; day <= totalDays; day += 1) {
-      const isoDay = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      const dayRecords = recordsByDate[isoDay] || [];
-      const cell = document.createElement("div");
-      cell.className = `calendar-day ${dayRecords.length ? "has-record" : ""}`.trim();
+  nav.appendChild(prevButton);
+  nav.appendChild(hint);
+  nav.appendChild(nextButton);
+  header.appendChild(title);
+  header.appendChild(nav);
 
-      const chips = dayRecords.map((record) => `
-        <div class="calendar-record-chip">${record.title}<br />${record.stadium}</div>
-      `).join("");
-
-      cell.innerHTML = `
-        <div class="calendar-day-number">${day}</div>
-        <div class="calendar-records">${chips}</div>
-      `;
-      grid.appendChild(cell);
-    }
-
-    shell.appendChild(header);
-    shell.appendChild(weekdayRow);
-    shell.appendChild(grid);
-    calendarView.appendChild(shell);
+  const weekdayRow = document.createElement("div");
+  weekdayRow.className = "calendar-grid";
+  [zh("\u65e5"), zh("\u4e00"), zh("\u4e8c"), zh("\u4e09"), zh("\u56db"), zh("\u4e94"), zh("\u516d")].forEach((weekday) => {
+    const cell = document.createElement("div");
+    cell.className = "calendar-day";
+    cell.innerHTML = `<strong>${weekday}</strong>`;
+    weekdayRow.appendChild(cell);
   });
+
+  const grid = document.createElement("div");
+  grid.className = "calendar-grid";
+
+  for (let fillerIndex = 0; fillerIndex < startDay; fillerIndex += 1) {
+    const filler = document.createElement("div");
+    filler.className = "calendar-day empty";
+    grid.appendChild(filler);
+  }
+
+  for (let day = 1; day <= totalDays; day += 1) {
+    const isoDay = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const dayRecords = recordsByDate[isoDay] || [];
+    const cell = document.createElement("div");
+    cell.className = `calendar-day ${dayRecords.length ? "has-record" : ""}`.trim();
+
+    const chips = dayRecords.map((record) => `
+      <div class="calendar-record-chip">${record.title}<br />${record.stadium}</div>
+    `).join("");
+
+    cell.innerHTML = `
+      <div class="calendar-day-number">${day}</div>
+      <div class="calendar-records">${chips}</div>
+    `;
+    grid.appendChild(cell);
+  }
+
+  shell.appendChild(header);
+  shell.appendChild(weekdayRow);
+  shell.appendChild(grid);
+  calendarView.appendChild(shell);
 }
 
 function renderRecordListView() {
@@ -412,6 +474,7 @@ function renderRecordListView() {
 
     card.querySelector('[data-action="up"]').addEventListener("click", () => moveRecord(index, -1));
     card.querySelector('[data-action="down"]').addEventListener("click", () => moveRecord(index, 1));
+    card.querySelector('[data-action="edit"]').addEventListener("click", () => startRecordEdit(record));
     card.querySelector('[data-action="delete"]').addEventListener("click", () => deleteRecord(record.id));
 
     wrapper.appendChild(fragment);
@@ -419,6 +482,30 @@ function renderRecordListView() {
 
   recordListView.appendChild(wrapper);
   selectedCount.textContent = String(recordSelections.size);
+}
+
+function resetRecordEditing() {
+  editingRecordId.value = "";
+  recordFormTitle.textContent = zh("\u65b0\u589e\u7403\u8cfd\u7d00\u9304");
+  recordSubmitBtn.textContent = zh("\u65b0\u589e\u7d00\u9304");
+  cancelRecordEditBtn.classList.add("hidden");
+  recordForm.reset();
+}
+
+function startRecordEdit(record) {
+  switchFeature("records");
+  switchRecordView("list");
+  editingRecordId.value = record.id;
+  recordFormTitle.textContent = zh("\u7de8\u8f2f\u7403\u8cfd\u7d00\u9304");
+  recordSubmitBtn.textContent = zh("\u66f4\u65b0\u7d00\u9304");
+  cancelRecordEditBtn.classList.remove("hidden");
+  document.getElementById("title").value = record.title;
+  document.getElementById("date").value = record.date;
+  document.getElementById("stadium").value = record.stadium;
+  document.getElementById("location").value = record.location;
+  document.getElementById("mapQuery").value = record.mapQuery || "";
+  document.getElementById("note").value = record.note || "";
+  recordForm.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function resetChecklistEditing() {
@@ -430,12 +517,14 @@ function resetChecklistEditing() {
 }
 
 function startChecklistEdit(item) {
+  switchFeature("checklist");
   editingChecklistId.value = item.id;
   checklistFormTitle.textContent = zh("\u7de8\u8f2f\u6e05\u55ae\u9805\u76ee");
   checklistSubmitBtn.textContent = zh("\u66f4\u65b0\u9805\u76ee");
   cancelChecklistEditBtn.classList.remove("hidden");
   checklistTitleInput.value = item.title;
   checklistNoteInput.value = item.note || "";
+  checklistForm.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderChecklistView() {
@@ -550,6 +639,9 @@ async function handleRecordSubmit(event) {
     return;
   }
 
+  const currentEditingId = editingRecordId.value;
+  const editingRecord = currentEditingId ? records.find((record) => record.id === currentEditingId) : null;
+
   const photoData = await readFileAsDataUrl(recordPhotoInput.files[0]).catch((error) => {
     alert(error.message);
     return null;
@@ -567,8 +659,8 @@ async function handleRecordSubmit(event) {
     location: formData.get("location").toString().trim(),
     mapQuery: formData.get("mapQuery").toString().trim(),
     note: formData.get("note").toString().trim(),
-    photoData,
-    createdAt: Date.now()
+    photoData: photoData || editingRecord?.photoData || "",
+    createdAt: editingRecord?.createdAt || Date.now()
   };
 
   if (!payload.title || !payload.date || !payload.stadium || !payload.location) {
@@ -576,8 +668,13 @@ async function handleRecordSubmit(event) {
     return;
   }
 
-  await addDoc(getRecordsCollection(currentUser.uid), payload);
-  recordForm.reset();
+  if (editingRecord) {
+    await updateDoc(doc(db, "users", currentUser.uid, "records", editingRecord.id), payload);
+  } else {
+    await addDoc(getRecordsCollection(currentUser.uid), payload);
+  }
+
+  resetRecordEditing();
   await loadAllData(currentUser.uid);
 }
 
@@ -736,6 +833,7 @@ exportChecklistBtn.addEventListener("click", exportChecklist);
 selectAllBtn.addEventListener("click", selectAllRecords);
 clearSelectionBtn.addEventListener("click", clearRecordSelections);
 cancelChecklistEditBtn.addEventListener("click", resetChecklistEditing);
+cancelRecordEditBtn.addEventListener("click", resetRecordEditing);
 signInBtn.addEventListener("click", handleSignIn);
 signOutBtn.addEventListener("click", handleSignOut);
 

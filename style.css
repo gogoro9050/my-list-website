@@ -429,6 +429,36 @@ button:hover {
   font-size: 14px;
 }
 
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.calendar-nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 248, 243, 0.08);
+  color: var(--text);
+  border: 1px solid rgba(255, 184, 102, 0.22);
+}
+
+.calendar-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.calendar-month-title {
+  font-weight: 700;
+  color: var(--orange-pale);
+}
+
 .calendar-grid {
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
