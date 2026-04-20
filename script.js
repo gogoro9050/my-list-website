@@ -28,80 +28,132 @@ const firebaseConfig = {
   measurementId: "G-1W3ZZSJL5L"
 };
 
+const MAX_IMAGE_BYTES = 600 * 1024;
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
-const form = document.getElementById("recordForm");
-const exportBtn = document.getElementById("exportBtn");
+const signInBtn = document.getElementById("signInBtn");
+const signOutBtn = document.getElementById("signOutBtn");
+const authStatusText = document.getElementById("authStatusText");
+const featureButtons = document.querySelectorAll(".feature-btn");
+const featurePanels = {
+  records: document.getElementById("recordsFeature"),
+  checklist: document.getElementById("checklistFeature")
+};
+const summaryLabel = document.getElementById("summaryLabel");
+const summaryValue = document.getElementById("summaryValue");
+const secondaryLabel = document.getElementById("secondaryLabel");
+const secondaryValue = document.getElementById("secondaryValue");
+const modeValue = document.getElementById("modeValue");
+
+const recordForm = document.getElementById("recordForm");
+const recordPhotoInput = document.getElementById("recordPhoto");
+const exportRecordsBtn = document.getElementById("exportRecordsBtn");
 const selectAllBtn = document.getElementById("selectAllBtn");
 const clearSelectionBtn = document.getElementById("clearSelectionBtn");
 const selectedCount = document.getElementById("selectedCount");
 const mapView = document.getElementById("mapView");
 const calendarView = document.getElementById("calendarView");
-const listView = document.getElementById("listView");
-const recordCount = document.getElementById("recordCount");
-const stadiumCount = document.getElementById("stadiumCount");
-const currentViewLabel = document.getElementById("currentViewLabel");
-const toggleButtons = document.querySelectorAll(".toggle-btn");
-const template = document.getElementById("recordCardTemplate");
-const signInBtn = document.getElementById("signInBtn");
-const signOutBtn = document.getElementById("signOutBtn");
-const authStatusText = document.getElementById("authStatusText");
+const recordListView = document.getElementById("recordListView");
+const recordToggleButtons = document.querySelectorAll(".toggle-btn");
+const recordTemplate = document.getElementById("recordCardTemplate");
 
-let currentView = "map";
-let records = [];
-let selectedIds = new Set();
+const checklistForm = document.getElementById("checklistForm");
+const checklistFormTitle = document.getElementById("checklistFormTitle");
+const editingChecklistId = document.getElementById("editingChecklistId");
+const checklistTitleInput = document.getElementById("checklistTitle");
+const checklistNoteInput = document.getElementById("checklistNote");
+const checklistPhotoInput = document.getElementById("checklistPhoto");
+const checklistSubmitBtn = document.getElementById("checklistSubmitBtn");
+const cancelChecklistEditBtn = document.getElementById("cancelChecklistEditBtn");
+const exportChecklistBtn = document.getElementById("exportChecklistBtn");
+const checklistListView = document.getElementById("checklistListView");
+const checklistTemplate = document.getElementById("checklistCardTemplate");
+
 let currentUser = null;
+let activeFeature = "records";
+let currentRecordView = "map";
+let recordSelections = new Set();
+let records = [];
+let checklistItems = [];
 
 function zh(text) {
   return text;
-}
-
-function setFormDisabled(disabled) {
-  const fields = form.querySelectorAll("input, textarea, button");
-  fields.forEach((field) => {
-    field.disabled = disabled;
-  });
-
-  exportBtn.disabled = disabled;
-  selectAllBtn.disabled = disabled;
-  clearSelectionBtn.disabled = disabled;
-}
-
-function resetForSignedOut() {
-  records = [];
-  selectedIds.clear();
-  renderAll();
 }
 
 function getRecordsCollection(userId) {
   return collection(db, "users", userId, "records");
 }
 
-async function loadRecordsForUser(userId) {
-  const recordsQuery = query(getRecordsCollection(userId), orderBy("createdAt", "desc"));
-  const snapshot = await getDocs(recordsQuery);
+function getChecklistCollection(userId) {
+  return collection(db, "users", userId, "checklistItems");
+}
 
-  records = snapshot.docs.map((recordDoc) => ({
+function setFormsDisabled(disabled) {
+  const controls = document.querySelectorAll("input, textarea, button");
+  controls.forEach((control) => {
+    if (control === signInBtn || control === signOutBtn) {
+      return;
+    }
+    control.disabled = disabled;
+  });
+}
+
+function resetSignedOutState() {
+  records = [];
+  checklistItems = [];
+  recordSelections.clear();
+  resetChecklistEditing();
+  renderAll();
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      resolve("");
+      return;
+    }
+
+    if (file.size > MAX_IMAGE_BYTES) {
+      reject(new Error("\u7167\u7247\u8acb\u63a7\u5236\u5728 600KB \u4ee5\u5167\uff0c\u9019\u6a23\u8f03\u9069\u5408\u76f4\u63a5\u5b58\u5230\u96f2\u7aef\u7d00\u9304\u88e1\u3002"));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => resolve(event.target.result);
+    reader.onerror = () => reject(new Error("\u7167\u7247\u8b80\u53d6\u5931\u6557\uff0c\u8acb\u91cd\u65b0\u9078\u64c7\u4e00\u5f35\u5716\u7247\u3002"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function loadAllData(userId) {
+  const [recordSnapshot, checklistSnapshot] = await Promise.all([
+    getDocs(query(getRecordsCollection(userId), orderBy("createdAt", "desc"))),
+    getDocs(query(getChecklistCollection(userId), orderBy("sortOrder", "asc")))
+  ]);
+
+  records = recordSnapshot.docs.map((recordDoc) => ({
     id: recordDoc.id,
     ...recordDoc.data()
   }));
+  checklistItems = checklistSnapshot.docs.map((itemDoc) => ({
+    id: itemDoc.id,
+    ...itemDoc.data()
+  }));
 
-  selectedIds = new Set([...selectedIds].filter((id) => records.some((record) => record.id === id)));
+  recordSelections = new Set([...recordSelections].filter((id) => records.some((record) => record.id === id)));
   renderAll();
-  switchView(currentView);
 }
 
 function formatDate(dateString) {
   if (!dateString) return zh("\u672a\u586b\u5beb\u65e5\u671f");
-
   const date = new Date(dateString);
   if (Number.isNaN(date.getTime())) {
     return dateString;
   }
-
   return new Intl.DateTimeFormat("zh-TW", {
     year: "numeric",
     month: "long",
@@ -114,7 +166,6 @@ function formatMonthLabel(dateString) {
   if (Number.isNaN(date.getTime())) {
     return zh("\u672a\u77e5\u6708\u4efd");
   }
-
   return new Intl.DateTimeFormat("zh-TW", {
     year: "numeric",
     month: "long"
@@ -129,29 +180,62 @@ function getMapUrl(record) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getMapQuery(record))}`;
 }
 
-function updateSelectedCount() {
-  selectedCount.textContent = selectedIds.size;
+function updateSidebarSummary() {
+  if (activeFeature === "records") {
+    const stadiums = new Set(records.map((record) => record.stadium.trim()));
+    const modeLabels = {
+      map: zh("\u5730\u5716"),
+      calendar: zh("\u65e5\u66c6"),
+      list: zh("\u5217\u8868")
+    };
+
+    summaryLabel.textContent = zh("\u7403\u8cfd\u5834\u6b21");
+    summaryValue.textContent = String(records.length);
+    secondaryLabel.textContent = zh("\u4e0d\u540c\u7403\u5834");
+    secondaryValue.textContent = String(stadiums.size);
+    modeValue.textContent = modeLabels[currentRecordView];
+  } else {
+    summaryLabel.textContent = zh("\u6e05\u55ae\u9805\u76ee");
+    summaryValue.textContent = String(checklistItems.length);
+    secondaryLabel.textContent = zh("\u6709\u5716\u7247\u9805\u76ee");
+    secondaryValue.textContent = String(checklistItems.filter((item) => item.photoData).length);
+    modeValue.textContent = zh("\u6e05\u55ae");
+  }
 }
 
-function renderStats() {
-  const stadiums = new Set(records.map((record) => record.stadium.trim()));
-  const viewLabels = {
-    map: zh("\u5730\u5716"),
-    calendar: zh("\u65e5\u66c6"),
-    list: zh("\u5217\u8868")
-  };
+function switchFeature(featureName) {
+  activeFeature = featureName;
 
-  recordCount.textContent = records.length;
-  stadiumCount.textContent = stadiums.size;
-  currentViewLabel.textContent = viewLabels[currentView];
-  updateSelectedCount();
+  Object.entries(featurePanels).forEach(([name, panel]) => {
+    panel.classList.toggle("active", name === featureName);
+    panel.classList.toggle("hidden", name !== featureName);
+  });
+
+  featureButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.feature === featureName);
+  });
+
+  updateSidebarSummary();
+}
+
+function switchRecordView(nextView) {
+  currentRecordView = nextView;
+  mapView.classList.toggle("hidden", nextView !== "map");
+  calendarView.classList.toggle("hidden", nextView !== "calendar");
+  recordListView.classList.toggle("hidden", nextView !== "list");
+
+  recordToggleButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.view === nextView);
+  });
+
+  updateSidebarSummary();
 }
 
 function renderMapView() {
   mapView.innerHTML = "";
 
   if (!records.length) {
-    mapView.innerHTML = `<div class="empty-state">${zh("\u65b0\u589e\u8a18\u9304\u5f8c\uff0c\u9019\u88e1\u6703\u51fa\u73fe\u53ef\u4ee5\u9ede\u9032\u771f\u5be6\u5730\u5716\u7684\u7403\u5834\u5361\u7247\u3002")}</div>`;
+    mapView.innerHTML = `<div class="empty-state">${zh("\u65b0\u589e\u8a18\u9304\u5f8c\uff0c\u9019\u88e1\u6703\u51fa\u73fe\u53ef\u4ee5\u9ede\u9032 Google Maps \u7684\u7403\u5834\u5361\u7247\u3002")}</div>`;
     return;
   }
 
@@ -170,7 +254,6 @@ function renderMapView() {
   Object.entries(grouped).forEach(([city, cityRecords]) => {
     const card = document.createElement("article");
     card.className = "map-card";
-
     const linksMarkup = cityRecords.map((record) => `
       <a class="map-link" href="${getMapUrl(record)}" target="_blank" rel="noreferrer">
         <div>
@@ -186,7 +269,7 @@ function renderMapView() {
         <div class="map-city">${city}</div>
         <div class="map-count">${cityRecords.length} ${zh("\u5834")}</div>
       </div>
-      <div class="map-meta">${zh("\u9ede\u9078\u5361\u7247\u53ef\u76f4\u63a5\u6253\u958b Google Maps")}</div>
+      <div class="map-meta">${zh("\u9ede\u5361\u7247\u53ef\u76f4\u63a5\u6253\u958b\u771f\u5be6\u5730\u5716")}</div>
       <div class="map-links">${linksMarkup}</div>
     `;
 
@@ -253,7 +336,7 @@ function renderCalendarView() {
     const grid = document.createElement("div");
     grid.className = "calendar-grid";
 
-    for (let index = 0; index < startDay; index += 1) {
+    for (let fillerIndex = 0; fillerIndex < startDay; fillerIndex += 1) {
       const filler = document.createElement("div");
       filler.className = "calendar-day empty";
       grid.appendChild(filler);
@@ -283,11 +366,11 @@ function renderCalendarView() {
   });
 }
 
-function renderListView() {
-  listView.innerHTML = "";
+function renderRecordListView() {
+  recordListView.innerHTML = "";
 
   if (!records.length) {
-    listView.innerHTML = `<div class="empty-state">${zh("\u9084\u6c92\u6709\u4efb\u4f55\u770b\u7403\u8a18\u9304\uff0c\u5148\u8a18\u4e0b\u4f60\u7684\u7b2c\u4e00\u5834\u5427\u3002")}</div>`;
+    recordListView.innerHTML = `<div class="empty-state">${zh("\u9084\u6c92\u6709\u4efb\u4f55\u770b\u7403\u8a18\u9304\uff0c\u5148\u8a18\u4e0b\u7b2c\u4e00\u5834\u5427\u3002")}</div>`;
     return;
   }
 
@@ -295,21 +378,21 @@ function renderListView() {
   wrapper.className = "records-list";
 
   records.forEach((record, index) => {
-    const fragment = template.content.cloneNode(true);
+    const fragment = recordTemplate.content.cloneNode(true);
     const card = fragment.querySelector(".record-card");
     const image = fragment.querySelector(".record-image");
     const imageFallback = fragment.querySelector(".record-image-fallback");
     const checkbox = fragment.querySelector(".record-select-input");
     const mapLink = fragment.querySelector(".record-map-link");
 
-    checkbox.checked = selectedIds.has(record.id);
+    checkbox.checked = recordSelections.has(record.id);
     checkbox.addEventListener("change", () => {
       if (checkbox.checked) {
-        selectedIds.add(record.id);
+        recordSelections.add(record.id);
       } else {
-        selectedIds.delete(record.id);
+        recordSelections.delete(record.id);
       }
-      updateSelectedCount();
+      selectedCount.textContent = String(recordSelections.size);
     });
 
     fragment.querySelector(".record-date").textContent = formatDate(record.date);
@@ -321,8 +404,8 @@ function renderListView() {
     mapLink.href = getMapUrl(record);
     mapLink.textContent = zh("\u958b\u555f\u771f\u5be6\u5730\u5716");
 
-    if (record.imageUrl) {
-      image.src = record.imageUrl;
+    if (record.photoData) {
+      image.src = record.photoData;
       image.classList.add("show");
       imageFallback.style.display = "none";
     }
@@ -334,27 +417,65 @@ function renderListView() {
     wrapper.appendChild(fragment);
   });
 
-  listView.appendChild(wrapper);
+  recordListView.appendChild(wrapper);
+  selectedCount.textContent = String(recordSelections.size);
+}
+
+function resetChecklistEditing() {
+  editingChecklistId.value = "";
+  checklistFormTitle.textContent = zh("\u65b0\u589e\u6e05\u55ae\u9805\u76ee");
+  checklistSubmitBtn.textContent = zh("\u65b0\u589e\u9805\u76ee");
+  cancelChecklistEditBtn.classList.add("hidden");
+  checklistForm.reset();
+}
+
+function startChecklistEdit(item) {
+  editingChecklistId.value = item.id;
+  checklistFormTitle.textContent = zh("\u7de8\u8f2f\u6e05\u55ae\u9805\u76ee");
+  checklistSubmitBtn.textContent = zh("\u66f4\u65b0\u9805\u76ee");
+  cancelChecklistEditBtn.classList.remove("hidden");
+  checklistTitleInput.value = item.title;
+  checklistNoteInput.value = item.note || "";
+}
+
+function renderChecklistView() {
+  checklistListView.innerHTML = "";
+
+  if (!checklistItems.length) {
+    checklistListView.innerHTML = `<div class="empty-state">${zh("\u9084\u6c92\u6709\u6e05\u55ae\u9805\u76ee\uff0c\u5148\u65b0\u589e\u4e00\u7b46\u5427\u3002")}</div>`;
+    return;
+  }
+
+  checklistItems.forEach((item, index) => {
+    const fragment = checklistTemplate.content.cloneNode(true);
+    const card = fragment.querySelector(".checklist-card");
+    const image = fragment.querySelector(".checklist-image");
+    const imageFallback = fragment.querySelector(".record-image-fallback");
+
+    fragment.querySelector(".checklist-title").textContent = item.title;
+    fragment.querySelector(".checklist-note").textContent = item.note || zh("\u6c92\u6709\u5099\u8a3b");
+
+    if (item.photoData) {
+      image.src = item.photoData;
+      image.classList.add("show");
+      imageFallback.style.display = "none";
+    }
+
+    card.querySelector('[data-action="up"]').addEventListener("click", () => moveChecklistItem(index, -1));
+    card.querySelector('[data-action="down"]').addEventListener("click", () => moveChecklistItem(index, 1));
+    card.querySelector('[data-action="edit"]').addEventListener("click", () => startChecklistEdit(item));
+    card.querySelector('[data-action="delete"]').addEventListener("click", () => deleteChecklistItem(item.id));
+
+    checklistListView.appendChild(fragment);
+  });
 }
 
 function renderAll() {
-  renderStats();
   renderMapView();
   renderCalendarView();
-  renderListView();
-}
-
-function switchView(nextView) {
-  currentView = nextView;
-  mapView.classList.toggle("hidden", nextView !== "map");
-  calendarView.classList.toggle("hidden", nextView !== "calendar");
-  listView.classList.toggle("hidden", nextView !== "list");
-
-  toggleButtons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.view === nextView);
-  });
-
-  renderStats();
+  renderRecordListView();
+  renderChecklistView();
+  updateSidebarSummary();
 }
 
 async function moveRecord(index, direction) {
@@ -377,37 +498,51 @@ async function moveRecord(index, direction) {
     })
   ]);
 
-  await loadRecordsForUser(currentUser.uid);
+  await loadAllData(currentUser.uid);
 }
 
 async function deleteRecord(recordId) {
   if (!currentUser) return;
 
-  selectedIds.delete(recordId);
+  recordSelections.delete(recordId);
   await deleteDoc(doc(db, "users", currentUser.uid, "records", recordId));
-  await loadRecordsForUser(currentUser.uid);
+  await loadAllData(currentUser.uid);
 }
 
-function createRecord() {
-  const formData = new FormData(form);
+async function moveChecklistItem(index, direction) {
+  if (!currentUser) return;
 
-  return {
-    title: formData.get("title").toString().trim(),
-    date: formData.get("date").toString(),
-    stadium: formData.get("stadium").toString().trim(),
-    location: formData.get("location").toString().trim(),
-    mapQuery: formData.get("mapQuery").toString().trim(),
-    imageUrl: formData.get("imageUrl").toString().trim(),
-    note: formData.get("note").toString().trim(),
-    createdAt: Date.now()
-  };
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= checklistItems.length) {
+    return;
+  }
+
+  const currentItem = checklistItems[index];
+  const targetItem = checklistItems[targetIndex];
+
+  await Promise.all([
+    updateDoc(doc(db, "users", currentUser.uid, "checklistItems", currentItem.id), {
+      sortOrder: targetItem.sortOrder
+    }),
+    updateDoc(doc(db, "users", currentUser.uid, "checklistItems", targetItem.id), {
+      sortOrder: currentItem.sortOrder
+    })
+  ]);
+
+  await loadAllData(currentUser.uid);
 }
 
-function resetForm() {
-  form.reset();
+async function deleteChecklistItem(itemId) {
+  if (!currentUser) return;
+
+  await deleteDoc(doc(db, "users", currentUser.uid, "checklistItems", itemId));
+  if (editingChecklistId.value === itemId) {
+    resetChecklistEditing();
+  }
+  await loadAllData(currentUser.uid);
 }
 
-async function handleSubmit(event) {
+async function handleRecordSubmit(event) {
   event.preventDefault();
 
   if (!currentUser) {
@@ -415,49 +550,127 @@ async function handleSubmit(event) {
     return;
   }
 
-  const record = createRecord();
+  const photoData = await readFileAsDataUrl(recordPhotoInput.files[0]).catch((error) => {
+    alert(error.message);
+    return null;
+  });
 
-  if (!record.title || !record.date || !record.stadium || !record.location) {
+  if (photoData === null) {
+    return;
+  }
+
+  const formData = new FormData(recordForm);
+  const payload = {
+    title: formData.get("title").toString().trim(),
+    date: formData.get("date").toString(),
+    stadium: formData.get("stadium").toString().trim(),
+    location: formData.get("location").toString().trim(),
+    mapQuery: formData.get("mapQuery").toString().trim(),
+    note: formData.get("note").toString().trim(),
+    photoData,
+    createdAt: Date.now()
+  };
+
+  if (!payload.title || !payload.date || !payload.stadium || !payload.location) {
     alert(zh("\u8acb\u5148\u586b\u5b8c\u6a19\u984c\u3001\u65e5\u671f\u3001\u7403\u5834\u548c\u57ce\u5e02\u3002"));
     return;
   }
 
-  await addDoc(getRecordsCollection(currentUser.uid), record);
-  resetForm();
-  await loadRecordsForUser(currentUser.uid);
+  await addDoc(getRecordsCollection(currentUser.uid), payload);
+  recordForm.reset();
+  await loadAllData(currentUser.uid);
+}
+
+async function handleChecklistSubmit(event) {
+  event.preventDefault();
+
+  if (!currentUser) {
+    alert(zh("\u8acb\u5148\u767b\u5165 Google \u5e33\u865f\u3002"));
+    return;
+  }
+
+  const currentEditingId = editingChecklistId.value;
+  const editingItem = currentEditingId ? checklistItems.find((item) => item.id === currentEditingId) : null;
+
+  const newPhotoData = await readFileAsDataUrl(checklistPhotoInput.files[0]).catch((error) => {
+    alert(error.message);
+    return null;
+  });
+
+  if (newPhotoData === null) {
+    return;
+  }
+
+  const payload = {
+    title: checklistTitleInput.value.trim(),
+    note: checklistNoteInput.value.trim(),
+    photoData: newPhotoData || editingItem?.photoData || ""
+  };
+
+  if (!payload.title) {
+    alert(zh("\u8acb\u5148\u586b\u5beb\u6e05\u55ae\u9805\u76ee\u540d\u7a31\u3002"));
+    return;
+  }
+
+  if (editingItem) {
+    await updateDoc(doc(db, "users", currentUser.uid, "checklistItems", editingItem.id), payload);
+  } else {
+    const lastSortOrder = checklistItems.length ? checklistItems[checklistItems.length - 1].sortOrder : 0;
+    await addDoc(getChecklistCollection(currentUser.uid), {
+      ...payload,
+      sortOrder: lastSortOrder + 1,
+      createdAt: Date.now()
+    });
+  }
+
+  resetChecklistEditing();
+  await loadAllData(currentUser.uid);
 }
 
 function selectAllRecords() {
-  selectedIds = new Set(records.map((record) => record.id));
-  renderAll();
-  switchView(currentView);
+  recordSelections = new Set(records.map((record) => record.id));
+  renderRecordListView();
 }
 
-function clearSelection() {
-  selectedIds.clear();
-  renderAll();
-  switchView(currentView);
+function clearRecordSelections() {
+  recordSelections.clear();
+  renderRecordListView();
 }
 
-function createPdfWindowContent(selectedRecords) {
-  const cardsMarkup = selectedRecords.map((record) => `
+function createRecordsPdf(recordsToExport) {
+  const cardsMarkup = recordsToExport.map((record) => `
     <section style="page-break-inside: avoid; border: 1px solid #ddd; border-radius: 18px; padding: 18px; margin-bottom: 18px;">
       <h2 style="margin: 0 0 8px; color: #d55b00;">${record.title}</h2>
       <p style="margin: 0 0 8px;"><strong>${zh("\u65e5\u671f\uff1a")}</strong>${formatDate(record.date)}</p>
       <p style="margin: 0 0 8px;"><strong>${zh("\u7403\u5834\uff1a")}</strong>${record.stadium}</p>
       <p style="margin: 0 0 8px;"><strong>${zh("\u57ce\u5e02\uff1a")}</strong>${record.location}</p>
-      <p style="margin: 0 0 8px;"><strong>${zh("\u5730\u5716\uff1a")}</strong>${getMapQuery(record)}</p>
       <p style="margin: 0 0 8px;"><strong>${zh("\u5099\u8a3b\uff1a")}</strong>${record.note || zh("\u7121")}</p>
-      ${record.imageUrl ? `<img src="${record.imageUrl}" alt="photo" style="max-width: 100%; border-radius: 14px; margin-top: 10px;" />` : ""}
+      ${record.photoData ? `<img src="${record.photoData}" alt="photo" style="max-width: 100%; border-radius: 14px; margin-top: 10px;" />` : ""}
     </section>
   `).join("");
 
+  return createPrintHtml(zh("\u770b\u7403\u7d00\u9304\u532f\u51fa"), cardsMarkup);
+}
+
+function createChecklistPdf(itemsToExport) {
+  const cardsMarkup = itemsToExport.map((item, index) => `
+    <section style="page-break-inside: avoid; border: 1px solid #ddd; border-radius: 18px; padding: 18px; margin-bottom: 18px;">
+      <h2 style="margin: 0 0 8px; color: #d55b00;">${index + 1}. ${item.title}</h2>
+      <p style="margin: 0 0 8px;"><strong>${zh("\u5099\u8a3b\uff1a")}</strong>${item.note || zh("\u7121")}</p>
+      ${item.photoData ? `<img src="${item.photoData}" alt="photo" style="max-width: 100%; border-radius: 14px; margin-top: 10px;" />` : ""}
+    </section>
+  `).join("");
+
+  return createPrintHtml(zh("\u6e05\u55ae\u532f\u51fa"), cardsMarkup);
+}
+
+function createPrintHtml(title, cardsMarkup) {
   return `
     <!DOCTYPE html>
     <html lang="zh-Hant">
     <head>
       <meta charset="UTF-8" />
-      <title>${zh("\u770b\u7403\u7d00\u9304 PDF")}</title>
+      <title>${title}</title>
       <style>
         body { font-family: "Microsoft JhengHei", sans-serif; padding: 24px; color: #222; }
         h1 { color: #ff6b00; margin-bottom: 10px; }
@@ -465,37 +678,43 @@ function createPdfWindowContent(selectedRecords) {
       </style>
     </head>
     <body>
-      <h1>${zh("\u770b\u7403\u7d00\u9304\u532f\u51fa")}</h1>
+      <h1>${title}</h1>
       <p class="hint">${zh("\u958b\u555f\u5f8c\u8acb\u5728\u5217\u5370\u8996\u7a97\u9078\u64c7\u300c\u5132\u5b58\u70ba PDF\u300d\u3002")}</p>
       ${cardsMarkup}
       <script>
-        window.onload = () => {
-          window.print();
-        };
+        window.onload = () => { window.print(); };
       <\/script>
     </body>
     </html>
   `;
 }
 
-function exportSelectedToPdf() {
-  const selectedRecords = records.filter((record) => selectedIds.has(record.id));
-
-  if (!selectedRecords.length) {
-    alert(zh("\u8acb\u5148\u52fe\u9078\u60f3\u532f\u51fa\u7684\u6bd4\u8cfd\u3002"));
-    return;
-  }
-
+function openPrintWindow(html) {
   const printWindow = window.open("", "_blank", "width=980,height=720");
-
   if (!printWindow) {
     alert(zh("\u700f\u89bd\u5668\u64cb\u4e0b\u4e86\u65b0\u8996\u7a97\uff0c\u8acb\u5141\u8a31\u5f8c\u518d\u8a66\u4e00\u6b21\u3002"));
     return;
   }
-
   printWindow.document.open();
-  printWindow.document.write(createPdfWindowContent(selectedRecords));
+  printWindow.document.write(html);
   printWindow.document.close();
+}
+
+function exportSelectedRecords() {
+  const selectedRecords = records.filter((record) => recordSelections.has(record.id));
+  if (!selectedRecords.length) {
+    alert(zh("\u8acb\u5148\u52fe\u9078\u60f3\u532f\u51fa\u7684\u6bd4\u8cfd\u3002"));
+    return;
+  }
+  openPrintWindow(createRecordsPdf(selectedRecords));
+}
+
+function exportChecklist() {
+  if (!checklistItems.length) {
+    alert(zh("\u76ee\u524d\u6c92\u6709\u53ef\u532f\u51fa\u7684\u6e05\u55ae\u9805\u76ee\u3002"));
+    return;
+  }
+  openPrintWindow(createChecklistPdf(checklistItems));
 }
 
 async function handleSignIn() {
@@ -510,15 +729,22 @@ async function handleSignOut() {
   await signOut(auth);
 }
 
-form.addEventListener("submit", handleSubmit);
-exportBtn.addEventListener("click", exportSelectedToPdf);
+recordForm.addEventListener("submit", handleRecordSubmit);
+checklistForm.addEventListener("submit", handleChecklistSubmit);
+exportRecordsBtn.addEventListener("click", exportSelectedRecords);
+exportChecklistBtn.addEventListener("click", exportChecklist);
 selectAllBtn.addEventListener("click", selectAllRecords);
-clearSelectionBtn.addEventListener("click", clearSelection);
+clearSelectionBtn.addEventListener("click", clearRecordSelections);
+cancelChecklistEditBtn.addEventListener("click", resetChecklistEditing);
 signInBtn.addEventListener("click", handleSignIn);
 signOutBtn.addEventListener("click", handleSignOut);
 
-toggleButtons.forEach((button) => {
-  button.addEventListener("click", () => switchView(button.dataset.view));
+featureButtons.forEach((button) => {
+  button.addEventListener("click", () => switchFeature(button.dataset.feature));
+});
+
+recordToggleButtons.forEach((button) => {
+  button.addEventListener("click", () => switchRecordView(button.dataset.view));
 });
 
 onAuthStateChanged(auth, async (user) => {
@@ -528,16 +754,17 @@ onAuthStateChanged(auth, async (user) => {
     authStatusText.textContent = `${zh("\u5df2\u767b\u5165\uff1a")}${user.displayName || user.email}`;
     signInBtn.classList.add("hidden");
     signOutBtn.classList.remove("hidden");
-    setFormDisabled(false);
-    await loadRecordsForUser(user.uid);
+    setFormsDisabled(false);
+    await loadAllData(user.uid);
   } else {
-    authStatusText.textContent = zh("\u8acb\u5148\u7528 Google \u767b\u5165\uff0c\u8cc7\u6599\u6703\u5b58\u5728\u4f60\u81ea\u5df1\u7684 Firebase \u96f2\u7aef\u5e33\u865f\u4e0b\u3002");
+    authStatusText.textContent = zh("\u8acb\u5148\u7528 Google \u767b\u5165\uff0c\u7403\u8cfd\u7d00\u9304\u548c\u6e05\u55ae\u6703\u5404\u81ea\u540c\u6b65\u5230\u4f60\u7684 Firebase \u96f2\u7aef\u5e33\u865f\u4e0b\u3002");
     signInBtn.classList.remove("hidden");
     signOutBtn.classList.add("hidden");
-    setFormDisabled(true);
-    resetForSignedOut();
+    setFormsDisabled(true);
+    resetSignedOutState();
   }
 });
 
 renderAll();
-switchView("map");
+switchFeature("records");
+switchRecordView("map");
