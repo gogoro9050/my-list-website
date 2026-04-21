@@ -1,3 +1,6 @@
+
+const TOKEN = import.meta.env.VITE_API_KEY;
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import {
   getAuth,
@@ -19,6 +22,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 const firebaseConfig = {
+  apikey: TOKEN,
   authDomain: "jayden-4a795.firebaseapp.com",
   projectId: "jayden-4a795",
   storageBucket: "jayden-4a795.firebasestorage.app",
