@@ -22,7 +22,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apikey: TOKEN,
+  apiKey: TOKEN,
   authDomain: "jayden-4a795.firebaseapp.com",
   projectId: "jayden-4a795",
   storageBucket: "jayden-4a795.firebasestorage.app",
