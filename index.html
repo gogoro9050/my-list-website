@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>&#29699;&#36093;&#36275;&#36321;&#33287;&#28165;&#21934;&#38642;&#31471;&#31449;</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="module" crossorigin src="/my-list-website/assets/index-DxYgALe-.js"></script>
+  <link rel="stylesheet" crossorigin href="/my-list-website/assets/index-05Er9Hut.css">
+</head>
+<body>
+    <div id="app"></div>
+
+  <main class="page-shell">
+    <section class="auth-bar">
+      <div class="auth-copy">
+        <strong>&#38642;&#31471;&#21516;&#27493;&#27169;&#24335;</strong>
+        <span id="authStatusText">&#35531;&#20808;&#29992; Google &#30331;&#20837;&#65292;&#25165;&#33021;&#23384;&#21462;&#20491;&#20154;&#36039;&#26009;&#12290;</span>
+      </div>
+      <div class="auth-actions">
+        <button type="button" id="signInBtn" class="primary-btn">&#29992; Google &#30331;&#20837;</button>
+        <button type="button" id="signOutBtn" class="secondary-btn hidden">&#30331;&#20986;</button>
+      </div>
+    </section>
+
+    <section class="app-grid">
+      <aside class="panel sidebar-panel">
+        <div class="brand-block">
+          <p class="eyebrow">&#38642;&#31471;&#36275;&#36321;&#30475;&#26495;</p>
+          <h1>&#25105;&#30340;&#38642;&#31471;&#36275;&#36321;</h1>
+          <p class="sidebar-copy">&#36889;&#35041;&#26371;&#24171;&#20320;&#35352;&#37636;&#20320;&#30340;&#28165;&#21934;&#21450;&#30475;&#29699;&#35352;&#37636;&#12290;</p>
+        </div>
+
+        <nav class="feature-nav">
+          <button type="button" class="feature-btn active" data-feature="records">
+            <span class="feature-name">&#29699;&#36093;&#35352;&#37636;</span>
+            <span class="feature-desc">&#22320;&#22294; / &#26085;&#26310; / &#21015;&#34920;</span>
+          </button>
+          <button type="button" class="feature-btn" data-feature="checklist">
+            <span class="feature-name">&#28165;&#21934;&#21151;&#33021;</span>
+            <span class="feature-desc">&#39033;&#30446;&#32232;&#36655; / &#29031;&#29255; / PDF</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-stats">
+          <div class="stat-card">
+            <span class="stat-label" id="summaryLabel">&#29699;&#36093;&#22580;&#27425;</span>
+            <strong id="summaryValue">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label" id="secondaryLabel">&#19981;&#21516;&#29699;&#22580;</span>
+            <strong id="secondaryValue">0</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">&#30446;&#21069;&#27169;&#24335;</span>
+            <strong id="modeValue">&#22320;&#22294;</strong>
+          </div>
+        </div>
+
+        <div class="storage-hint">
+          <h3>&#20786;&#23384;&#35498;&#26126;</h3>
+          <p>&#29031;&#29255;&#26371;&#36319;&#33879;&#32000;&#37636;&#23384;&#22312; Firebase &#38642;&#31471;&#36039;&#26009;&#24235;&#35041;&#12290;&#28858;&#20102;&#31337;&#23450;&#65292;&#35531;&#30433;&#37327;&#20351;&#29992;&#36611;&#23567;&#30340;&#29031;&#29255;&#12290;</p>
+        </div>
+      </aside>
+
+      <section class="content-column">
+        <section id="recordsFeature" class="feature-panel active">
+          <section class="hero panel">
+            <div class="hero-copy">
+              <p class="eyebrow">&#29699;&#36093;&#36275;&#36321;&#30475;&#26495;</p>
+              <h2>&#30475;&#29699;&#36275;&#36321;</h2>
+              <p class="hero-text">&#35352;&#37636;&#27599;&#19968;&#22580;&#20320;&#35242;&#33258;&#21040;&#22580;&#30340;&#27604;&#36093;&#65292;&#30041;&#19979;&#27161;&#38988;&#12289;&#26085;&#26399;&#12289;&#29699;&#22580;&#12289;&#29031;&#29255;&#33287;&#20633;&#35387;&#65292;&#29992;&#22320;&#22294;&#12289;&#26085;&#26310;&#21644;&#21015;&#34920;&#26041;&#24335;&#22238;&#39015;&#33258;&#24049;&#30340;&#29699;&#36093;&#36275;&#36321;&#12290;</p>
+            </div>
+          </section>
+
+          <section class="feature-layout">
+            <section class="panel form-panel">
+              <div class="panel-heading">
+                <h3 id="recordFormTitle">&#26032;&#22686;&#29699;&#36093;&#35352;&#37636;</h3>
+                <p>&#29031;&#29255;&#21487;&#30452;&#25509;&#21295;&#20837;&#65292;&#32232;&#36655;&#24460;&#26371;&#33258;&#21205;&#36319;&#33879;&#32000;&#37636;&#23384;&#22312;&#38642;&#31471;&#12290;</p>
+              </div>
+
+              <form id="recordForm" class="record-form">
+                <label for="title">&#27161;&#38988;</label>
+                <input id="title" name="title" type="text" placeholder="&#20363;&#22914;&#65306;&#32113;&#19968;&#29509; vs &#20013;&#20449;&#20804;&#24351;" required />
+
+                <div class="field-row">
+                  <div>
+                    <label for="date">&#26085;&#26399;</label>
+                    <input id="date" name="date" type="date" required />
+                  </div>
+                  <div>
+                    <label for="stadium">&#29699;&#22580;</label>
+                    <input id="stadium" name="stadium" type="text" placeholder="&#20363;&#22914;&#65306;&#33274;&#21335;&#26834;&#29699;&#22580;" required />
+                  </div>
+                </div>
+
+                <div class="field-row">
+                  <div>
+                    <label for="location">&#22478;&#24066; / &#22320;&#21312;</label>
+                    <input id="location" name="location" type="text" placeholder="&#20363;&#22914;&#65306;&#21488;&#21335;&#24066;" required />
+                  </div>
+                  <div>
+                    <label for="mapQuery">&#22320;&#22294;&#38364;&#37749;&#23383;</label>
+                    <input id="mapQuery" name="mapQuery" type="text" placeholder="&#20363;&#22914;&#65306;&#33274;&#21335;&#26834;&#29699;&#22580;&#21488;&#21335;&#24066;" />
+                  </div>
+                </div>
+
+                <label for="recordPhoto">&#27604;&#36093;&#29031;&#29255;</label>
+                <input id="recordPhoto" name="recordPhoto" type="file" accept="image/*" />
+                <p class="field-hint">&#24314;&#35696;&#36984;&#36611;&#23567;&#30340;&#29031;&#29255;&#65292;&#21333;&#24373;&#19981;&#35201;&#22826;&#22823;&#12290;</p>
+
+                <label for="note">&#20633;&#35387;</label>
+                <textarea id="note" name="note" rows="5" placeholder="&#20363;&#22914;&#65306;&#20170;&#22825;&#26159;&#26412;&#23395;&#31532;&#19968;&#27425;&#36914;&#22580;&#65292;&#20061;&#23616;&#19979;&#36870;&#36681;&#24456;&#31934;&#24425;&#12290;"></textarea>
+
+                <div class="form-actions">
+                  <input id="editingRecordId" type="hidden" />
+                  <button type="submit" id="recordSubmitBtn" class="primary-btn">&#26032;&#22686;&#35352;&#37636;</button>
+                  <button type="button" id="cancelRecordEditBtn" class="secondary-btn hidden">&#21462;&#28040;&#32232;&#36655;</button>
+                  <button type="button" id="exportRecordsBtn" class="secondary-btn">&#21295;&#20986;&#24050;&#36984; PDF</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="panel content-panel">
+              <div class="panel-heading panel-heading-split">
+                <div>
+                  <h3>&#29699;&#36093;&#35222;&#22294;</h3>
+                  <p>&#22320;&#22294;&#21487;&#30452;&#25509;&#38283;&#30495;&#23526; Google Maps&#65292;&#26085;&#26310;&#26371;&#19968;&#27425;&#39023;&#31034;&#19968;&#20491;&#26376;&#65292;&#20006;&#21487;&#29992;&#24038;&#21491;&#20999;&#25563;&#12290;</p>
+                </div>
+
+                <div class="view-switch">
+                  <button type="button" class="toggle-btn active" data-view="map">&#22320;&#22294;</button>
+                  <button type="button" class="toggle-btn" data-view="calendar">&#26085;&#26310;</button>
+                  <button type="button" class="toggle-btn" data-view="list">&#21015;&#34920;</button>
+                </div>
+              </div>
+
+              <div class="selection-toolbar">
+                <div class="selection-summary">
+                  <strong id="selectedCount">0</strong>
+                  <span>&#24050;&#36984;&#21462;&#22580;&#27425;</span>
+                </div>
+                <div class="selection-actions">
+                  <button type="button" id="selectAllBtn" class="secondary-btn">&#20840;&#36984;</button>
+                  <button type="button" id="clearSelectionBtn" class="secondary-btn">&#28165;&#38500;&#36984;&#21462;</button>
+                </div>
+              </div>
+
+              <div id="mapView" class="view-panel"></div>
+              <div id="calendarView" class="view-panel hidden"></div>
+              <div id="recordListView" class="view-panel hidden"></div>
+            </section>
+          </section>
+        </section>
+
+        <section id="checklistFeature" class="feature-panel hidden">
+          <section class="hero panel">
+            <div class="hero-copy">
+              <p class="eyebrow">&#28165;&#21934;&#35352;&#37636;&#30475;&#26495;</p>
+              <h2>&#25105;&#30340;&#28165;&#21934;</h2>
+              <p class="hero-text">&#29992;&#21516;&#19968;&#20491; Google &#24080;&#34399;&#25226;&#28165;&#21934;&#39033;&#30446;&#20063;&#25910;&#32013;&#36215;&#20358;&#12290;&#21487;&#26032;&#22686;&#12289;&#32232;&#36655;&#12289;&#19978;&#19979;&#31227;&#21205;&#12289;&#21295;&#20837;&#29031;&#29255;&#65292;&#26368;&#24460;&#19968;&#27425;&#21295;&#20986;&#25972;&#20221;&#28165;&#21934;&#12290;</p>
+            </div>
+          </section>
+
+          <section class="feature-layout">
+            <section class="panel form-panel">
+              <div class="panel-heading">
+                <h3 id="checklistFormTitle">&#26032;&#22686;&#28165;&#21934;&#39033;&#30446;</h3>
+                <p>&#28165;&#21934;&#39033;&#30446;&#21487;&#38568;&#26178;&#32232;&#36655;&#65292;&#29031;&#29255;&#26371;&#36319;&#33879;&#39033;&#30446;&#19968;&#36215;&#23384;&#23601;&#12290;</p>
+              </div>
+
+              <form id="checklistForm" class="record-form">
+                <input id="editingChecklistId" type="hidden" />
+
+                <label for="checklistTitle">&#38917;&#30446;&#21517;&#31281;</label>
+                <input id="checklistTitle" name="checklistTitle" type="text" placeholder="&#20363;&#22914;&#65306;&#36914;&#22580;&#21069;&#35201;&#24118;&#30340;&#26481;&#35199;" required />
+
+                <label for="checklistNote">&#35498;&#26126; / &#20633;&#35387;</label>
+                <textarea id="checklistNote" name="checklistNote" rows="4" placeholder="&#20363;&#22914;&#65306;&#21253;&#21253;&#35041;&#38632;&#34915;&#12289;&#26361;&#25910;&#34255;&#30340;&#21295;&#22580;&#31080;&#26681;&#31561;"></textarea>
+
+                <label for="checklistPhoto">&#39033;&#30446;&#29031;&#29255;</label>
+                <input id="checklistPhoto" name="checklistPhoto" type="file" accept="image/*" />
+                <p class="field-hint">&#22914;&#26524;&#27491;&#22312;&#32232;&#36655;&#65292;&#27794;&#26377;&#37325;&#26032;&#36984;&#29031;&#29255;&#23601;&#26371;&#20445;&#30041;&#21407;&#22396;&#22294;&#29255;&#12290;</p>
+
+                <div class="form-actions">
+                  <button type="submit" id="checklistSubmitBtn" class="primary-btn">&#26032;&#22686;&#38917;&#30446;</button>
+                  <button type="button" id="cancelChecklistEditBtn" class="secondary-btn hidden">&#21462;&#28040;&#32232;&#36655;</button>
+                  <button type="button" id="exportChecklistBtn" class="secondary-btn">&#21295;&#20986;&#28165;&#21934; PDF</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="panel content-panel">
+              <div class="panel-heading">
+                <h3>&#28165;&#21934;&#38917;&#30446;</h3>
+                <p>&#21487;&#19978;&#19979;&#31227;&#21205;&#38918;&#24207;&#12289;&#38568;&#26178;&#32232;&#36655;&#20839;&#23481;&#65292;&#20063;&#21487;&#30452;&#25509;&#22312;&#31449;&#20839;&#27298;&#35222;&#29031;&#29255;&#12290;</p>
+              </div>
+
+              <div id="checklistListView" class="records-list"></div>
+            </section>
+          </section>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <template id="recordCardTemplate">
+    <article class="record-card">
+      <div class="record-select">
+        <label class="record-checkbox">
+          <input type="checkbox" class="record-select-input" />
+          <span>&#21295;&#20986;</span>
+        </label>
+      </div>
+      <div class="record-image-wrap">
+        <img class="record-image" alt="&#27604;&#36093;&#29031;&#29255;" />
+        <div class="record-image-fallback">&#28961;&#29031;&#29255;</div>
+      </div>
+      <div class="record-body">
+        <div class="record-topline">
+          <span class="record-date"></span>
+          <span class="record-location"></span>
+        </div>
+        <h4 class="record-title"></h4>
+        <p class="record-stadium"></p>
+        <a class="record-map-link" target="_blank" rel="noreferrer">&#38283;&#21855;&#30495;&#23526;&#22320;&#22294;</a>
+        <p class="record-note"></p>
+        <div class="record-actions">
+          <button type="button" class="move-btn" data-action="up">&#19978;&#31227;</button>
+          <button type="button" class="move-btn" data-action="down">&#19979;&#31227;</button>
+          <button type="button" class="secondary-btn" data-action="edit">&#32232;&#36655;</button>
+          <button type="button" class="delete-btn" data-action="delete">&#21034;&#38500;</button>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <template id="checklistCardTemplate">
+    <article class="checklist-card">
+      <div class="checklist-image-wrap">
+        <img class="checklist-image" alt="&#28165;&#21934;&#29031;&#29255;" />
+        <div class="record-image-fallback">&#28961;&#29031;&#29255;</div>
+      </div>
+      <div class="checklist-body">
+        <h4 class="checklist-title"></h4>
+        <p class="checklist-note"></p>
+        <div class="record-actions">
+          <button type="button" class="move-btn" data-action="up">&#19978;&#31227;</button>
+          <button type="button" class="move-btn" data-action="down">&#19979;&#31227;</button>
+          <button type="button" class="secondary-btn" data-action="edit">&#32232;&#36655;</button>
+          <button type="button" class="delete-btn" data-action="delete">&#21034;&#38500;</button>
+        </div>
+      </div>
+    </article>
+  </template>
+
+</body>
+</html>
